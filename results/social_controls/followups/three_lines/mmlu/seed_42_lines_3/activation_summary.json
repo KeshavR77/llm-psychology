@@ -1,0 +1,221 @@
+{
+  "interpretation": "Descriptive activation contrasts: explicit attribution versus unattributed assertions, and distinct speakers versus one repeated speaker. These do not establish a pure conformity mechanism. Token lengths are reported without artificial padding.",
+  "layers": [
+    {
+      "layer": 0,
+      "speaker_free_norm": 1.1823508739471436,
+      "single_participant_norm": 0.026232486590743065,
+      "cosine_similarity": 0.015647023916244507
+    },
+    {
+      "layer": 1,
+      "speaker_free_norm": 7.51898717880249,
+      "single_participant_norm": 0.12150752544403076,
+      "cosine_similarity": 0.7875198721885681
+    },
+    {
+      "layer": 2,
+      "speaker_free_norm": 10.430221557617188,
+      "single_participant_norm": 0.2355533093214035,
+      "cosine_similarity": 0.8502078652381897
+    },
+    {
+      "layer": 3,
+      "speaker_free_norm": 10.46545696258545,
+      "single_participant_norm": 0.2628489136695862,
+      "cosine_similarity": 0.748163104057312
+    },
+    {
+      "layer": 4,
+      "speaker_free_norm": 9.695401191711426,
+      "single_participant_norm": 0.3152155876159668,
+      "cosine_similarity": 0.6864734888076782
+    },
+    {
+      "layer": 5,
+      "speaker_free_norm": 6.82820987701416,
+      "single_participant_norm": 0.35443738102912903,
+      "cosine_similarity": 0.4905462861061096
+    },
+    {
+      "layer": 6,
+      "speaker_free_norm": 2.9842846393585205,
+      "single_participant_norm": 0.4623423218727112,
+      "cosine_similarity": 0.01883993111550808
+    },
+    {
+      "layer": 7,
+      "speaker_free_norm": 3.4091427326202393,
+      "single_participant_norm": 0.8409345149993896,
+      "cosine_similarity": 0.24006256461143494
+    },
+    {
+      "layer": 8,
+      "speaker_free_norm": 4.103904724121094,
+      "single_participant_norm": 1.1363917589187622,
+      "cosine_similarity": 0.3152710199356079
+    },
+    {
+      "layer": 9,
+      "speaker_free_norm": 4.780525207519531,
+      "single_participant_norm": 1.743522047996521,
+      "cosine_similarity": 0.3352229595184326
+    },
+    {
+      "layer": 10,
+      "speaker_free_norm": 5.441317081451416,
+      "single_participant_norm": 2.0885705947875977,
+      "cosine_similarity": 0.3115233778953552
+    },
+    {
+      "layer": 11,
+      "speaker_free_norm": 6.607930660247803,
+      "single_participant_norm": 2.947291612625122,
+      "cosine_similarity": 0.3523600697517395
+    },
+    {
+      "layer": 12,
+      "speaker_free_norm": 8.051607131958008,
+      "single_participant_norm": 3.52962064743042,
+      "cosine_similarity": 0.3710251748561859
+    },
+    {
+      "layer": 13,
+      "speaker_free_norm": 9.273587226867676,
+      "single_participant_norm": 4.151665210723877,
+      "cosine_similarity": 0.39682096242904663
+    },
+    {
+      "layer": 14,
+      "speaker_free_norm": 10.13941478729248,
+      "single_participant_norm": 4.2623443603515625,
+      "cosine_similarity": 0.3931618630886078
+    },
+    {
+      "layer": 15,
+      "speaker_free_norm": 11.578911781311035,
+      "single_participant_norm": 4.781727313995361,
+      "cosine_similarity": 0.46797066926956177
+    },
+    {
+      "layer": 16,
+      "speaker_free_norm": 14.292283058166504,
+      "single_participant_norm": 5.485603332519531,
+      "cosine_similarity": 0.5269028544425964
+    },
+    {
+      "layer": 17,
+      "speaker_free_norm": 17.07331657409668,
+      "single_participant_norm": 6.222646713256836,
+      "cosine_similarity": 0.4890255033969879
+    },
+    {
+      "layer": 18,
+      "speaker_free_norm": 22.580636978149414,
+      "single_participant_norm": 7.738027572631836,
+      "cosine_similarity": 0.4418834149837494
+    },
+    {
+      "layer": 19,
+      "speaker_free_norm": 30.621925354003906,
+      "single_participant_norm": 10.016796112060547,
+      "cosine_similarity": 0.36285826563835144
+    },
+    {
+      "layer": 20,
+      "speaker_free_norm": 38.242759704589844,
+      "single_participant_norm": 11.751974105834961,
+      "cosine_similarity": 0.34887853264808655
+    },
+    {
+      "layer": 21,
+      "speaker_free_norm": 54.490848541259766,
+      "single_participant_norm": 14.563457489013672,
+      "cosine_similarity": 0.37257301807403564
+    },
+    {
+      "layer": 22,
+      "speaker_free_norm": 64.07061004638672,
+      "single_participant_norm": 16.223966598510742,
+      "cosine_similarity": 0.4113904535770416
+    },
+    {
+      "layer": 23,
+      "speaker_free_norm": 83.36784362792969,
+      "single_participant_norm": 20.177478790283203,
+      "cosine_similarity": 0.42047375440597534
+    },
+    {
+      "layer": 24,
+      "speaker_free_norm": 96.5968246459961,
+      "single_participant_norm": 23.899276733398438,
+      "cosine_similarity": 0.4190519452095032
+    },
+    {
+      "layer": 25,
+      "speaker_free_norm": 118.07318878173828,
+      "single_participant_norm": 26.93017578125,
+      "cosine_similarity": 0.3346446454524994
+    },
+    {
+      "layer": 26,
+      "speaker_free_norm": 131.81808471679688,
+      "single_participant_norm": 31.504932403564453,
+      "cosine_similarity": 0.2862215042114258
+    },
+    {
+      "layer": 27,
+      "speaker_free_norm": 147.58950805664062,
+      "single_participant_norm": 37.07051086425781,
+      "cosine_similarity": 0.2551172077655792
+    },
+    {
+      "layer": 28,
+      "speaker_free_norm": 173.55117797851562,
+      "single_participant_norm": 44.21989822387695,
+      "cosine_similarity": 0.2105349749326706
+    },
+    {
+      "layer": 29,
+      "speaker_free_norm": 192.55599975585938,
+      "single_participant_norm": 48.95193099975586,
+      "cosine_similarity": 0.20135724544525146
+    },
+    {
+      "layer": 30,
+      "speaker_free_norm": 220.8660888671875,
+      "single_participant_norm": 57.18810272216797,
+      "cosine_similarity": 0.1513630449771881
+    },
+    {
+      "layer": 31,
+      "speaker_free_norm": 256.4855041503906,
+      "single_participant_norm": 68.0409927368164,
+      "cosine_similarity": 0.0724693015217781
+    },
+    {
+      "layer": 32,
+      "speaker_free_norm": 283.4794921875,
+      "single_participant_norm": 77.78517150878906,
+      "cosine_similarity": 0.059326134622097015
+    },
+    {
+      "layer": 33,
+      "speaker_free_norm": 306.9477233886719,
+      "single_participant_norm": 86.06507873535156,
+      "cosine_similarity": 0.06773483008146286
+    },
+    {
+      "layer": 34,
+      "speaker_free_norm": 370.2933654785156,
+      "single_participant_norm": 101.56448364257812,
+      "cosine_similarity": 0.10907205939292908
+    },
+    {
+      "layer": 35,
+      "speaker_free_norm": 499.6695861816406,
+      "single_participant_norm": 118.17166137695312,
+      "cosine_similarity": -0.108632393181324
+    }
+  ]
+}

@@ -1,0 +1,149 @@
+{
+  "interpretation": "Descriptive activation contrasts: explicit attribution versus unattributed assertions, and distinct speakers versus one repeated speaker. These do not establish a pure conformity mechanism. Token lengths are reported without artificial padding.",
+  "layers": [
+    {
+      "layer": 0,
+      "speaker_free_norm": 1.7417634725570679
+    },
+    {
+      "layer": 1,
+      "speaker_free_norm": 4.775351524353027
+    },
+    {
+      "layer": 2,
+      "speaker_free_norm": 6.254394054412842
+    },
+    {
+      "layer": 3,
+      "speaker_free_norm": 6.344034671783447
+    },
+    {
+      "layer": 4,
+      "speaker_free_norm": 5.969321250915527
+    },
+    {
+      "layer": 5,
+      "speaker_free_norm": 5.235459804534912
+    },
+    {
+      "layer": 6,
+      "speaker_free_norm": 4.503076553344727
+    },
+    {
+      "layer": 7,
+      "speaker_free_norm": 5.9897871017456055
+    },
+    {
+      "layer": 8,
+      "speaker_free_norm": 7.132023334503174
+    },
+    {
+      "layer": 9,
+      "speaker_free_norm": 7.9313740730285645
+    },
+    {
+      "layer": 10,
+      "speaker_free_norm": 9.282428741455078
+    },
+    {
+      "layer": 11,
+      "speaker_free_norm": 10.675802230834961
+    },
+    {
+      "layer": 12,
+      "speaker_free_norm": 12.03144359588623
+    },
+    {
+      "layer": 13,
+      "speaker_free_norm": 13.881938934326172
+    },
+    {
+      "layer": 14,
+      "speaker_free_norm": 15.371973991394043
+    },
+    {
+      "layer": 15,
+      "speaker_free_norm": 16.878643035888672
+    },
+    {
+      "layer": 16,
+      "speaker_free_norm": 18.360933303833008
+    },
+    {
+      "layer": 17,
+      "speaker_free_norm": 21.31368064880371
+    },
+    {
+      "layer": 18,
+      "speaker_free_norm": 27.11874008178711
+    },
+    {
+      "layer": 19,
+      "speaker_free_norm": 32.602481842041016
+    },
+    {
+      "layer": 20,
+      "speaker_free_norm": 38.31291580200195
+    },
+    {
+      "layer": 21,
+      "speaker_free_norm": 50.602909088134766
+    },
+    {
+      "layer": 22,
+      "speaker_free_norm": 57.49556350708008
+    },
+    {
+      "layer": 23,
+      "speaker_free_norm": 67.80164337158203
+    },
+    {
+      "layer": 24,
+      "speaker_free_norm": 79.2165756225586
+    },
+    {
+      "layer": 25,
+      "speaker_free_norm": 90.60950469970703
+    },
+    {
+      "layer": 26,
+      "speaker_free_norm": 100.68317413330078
+    },
+    {
+      "layer": 27,
+      "speaker_free_norm": 114.68333435058594
+    },
+    {
+      "layer": 28,
+      "speaker_free_norm": 133.92930603027344
+    },
+    {
+      "layer": 29,
+      "speaker_free_norm": 149.41671752929688
+    },
+    {
+      "layer": 30,
+      "speaker_free_norm": 172.85011291503906
+    },
+    {
+      "layer": 31,
+      "speaker_free_norm": 204.89564514160156
+    },
+    {
+      "layer": 32,
+      "speaker_free_norm": 226.0322265625
+    },
+    {
+      "layer": 33,
+      "speaker_free_norm": 254.97817993164062
+    },
+    {
+      "layer": 34,
+      "speaker_free_norm": 299.3585205078125
+    },
+    {
+      "layer": 35,
+      "speaker_free_norm": 349.35858154296875
+    }
+  ]
+}

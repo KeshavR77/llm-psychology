@@ -15,13 +15,17 @@ def selected_conditions(experiment):
     return ("no_context", "multiple_participants", *controls)
 
 
-def answer_block(condition, wrong_answer, lines):
+def answer_block(condition, wrong_answer, lines, speaker_free_format="xml"):
     if lines < 1:
         raise ValueError("lines must be positive")
     if condition == "no_context":
         return ""
     payload = f"<answer>{wrong_answer}</answer>"
     if condition == "speaker_free":
+        if speaker_free_format == "plain-labeled":
+            return "\n".join([f"Answer: {wrong_answer}"] * lines)
+        if speaker_free_format != "xml":
+            raise ValueError(f"Unknown speaker-free format: {speaker_free_format}")
         return "\n".join([payload] * lines)
     if condition == "single_participant":
         return "\n".join([f"Participant 1: {payload}"] * lines)
@@ -43,7 +47,7 @@ def prompt_parts(row, example_answer):
     return prefix, "\n\nYour answer: "
 
 
-def prepare_items(lines=7, seed=42, limit=None, data_file=DATA_FILE):
+def prepare_items(lines=7, seed=42, limit=None, data_file=DATA_FILE, speaker_free_format="xml"):
     rows = json.loads(Path(data_file).read_text())
     rng = random.Random(seed)
     items = []
@@ -61,7 +65,7 @@ def prepare_items(lines=7, seed=42, limit=None, data_file=DATA_FILE):
             "wrong_target": wrong,
             "example_answer": example,
             "prompts": {
-                condition: prefix + answer_block(condition, wrong, lines) + suffix
+                condition: prefix + answer_block(condition, wrong, lines, speaker_free_format) + suffix
                 for condition in ("no_context", "multiple_participants", *CONTROLS)
             },
         })

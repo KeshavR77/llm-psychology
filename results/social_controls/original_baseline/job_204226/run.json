@@ -1,0 +1,19 @@
+{
+  "job_id": "204226",
+  "repository_revision": "3c40a94acc7f28e5d84b3f026ef0a4df3052534d",
+  "repository_dirty": true,
+  "runner": "multi_actor.py",
+  "model": "Qwen/Qwen3-8B",
+  "cached_model_ref": "b968826d9c46dd6066d109eabc6255188de91218",
+  "dataset": "mmlu",
+  "mode": "8",
+  "explain": false,
+  "sampling": true,
+  "seed": 42,
+  "max_new_tokens": 50,
+  "max_attempts": 10,
+  "batch_size": 16,
+  "torch": "2.11.0+cu130",
+  "transformers": "5.7.0",
+  "dataset_sha256": "77f8248cd1b24e8d9b30ca76d71bbc088868ecb357d0007fe6708176e3b4f855"
+}

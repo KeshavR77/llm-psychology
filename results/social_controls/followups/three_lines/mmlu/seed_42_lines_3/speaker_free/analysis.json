@@ -1,0 +1,160 @@
+{
+  "interpretation": "Descriptive activation contrasts: explicit attribution versus unattributed assertions, and distinct speakers versus one repeated speaker. These do not establish a pure conformity mechanism. Token lengths are reported without artificial padding.",
+  "bootstrap_samples": 10000,
+  "bootstrap_seed": 42,
+  "metric_denominators": {
+    "accuracy": "parseable outputs in each condition",
+    "parse_rate": "all selected items",
+    "wrong_target_adoption": "all selected items; parse failures count as no adoption",
+    "baseline_correct_adoption": "items correct in the new no-context baseline; parse failures count as no adoption"
+  },
+  "conditions": {
+    "multiple_participants": {
+      "counts": {
+        "items": 100,
+        "parseable": 99,
+        "parse_failures": 1,
+        "correct": 65,
+        "wrong_target_adoptions": 34,
+        "baseline_correct_items": 97,
+        "baseline_correct_parse_failures": 1,
+        "baseline_correct_wrong_target_adoptions": 32
+      },
+      "metrics": {
+        "accuracy": {
+          "value": 0.6565656565656566,
+          "ci_low": 0.56,
+          "ci_high": 0.7474747474747475,
+          "valid_bootstrap_samples": 10000
+        },
+        "parse_rate": {
+          "value": 0.99,
+          "ci_low": 0.97,
+          "ci_high": 1.0,
+          "valid_bootstrap_samples": 10000
+        },
+        "wrong_target_adoption": {
+          "value": 0.34,
+          "ci_low": 0.25,
+          "ci_high": 0.43024999999999636,
+          "valid_bootstrap_samples": 10000
+        },
+        "baseline_correct_adoption": {
+          "value": 0.32989690721649484,
+          "ci_low": 0.23711340206185566,
+          "ci_high": 0.425531914893617,
+          "valid_bootstrap_samples": 10000
+        }
+      }
+    },
+    "speaker_free": {
+      "counts": {
+        "items": 100,
+        "parseable": 98,
+        "parse_failures": 2,
+        "correct": 2,
+        "wrong_target_adoptions": 96,
+        "baseline_correct_items": 97,
+        "baseline_correct_parse_failures": 2,
+        "baseline_correct_wrong_target_adoptions": 93
+      },
+      "metrics": {
+        "accuracy": {
+          "value": 0.02040816326530612,
+          "ci_low": 0.0,
+          "ci_high": 0.05154639175257732,
+          "valid_bootstrap_samples": 10000
+        },
+        "parse_rate": {
+          "value": 0.98,
+          "ci_low": 0.95,
+          "ci_high": 1.0,
+          "valid_bootstrap_samples": 10000
+        },
+        "wrong_target_adoption": {
+          "value": 0.96,
+          "ci_low": 0.92,
+          "ci_high": 0.99,
+          "valid_bootstrap_samples": 10000
+        },
+        "baseline_correct_adoption": {
+          "value": 0.9587628865979382,
+          "ci_low": 0.9166666666666666,
+          "ci_high": 0.98989898989899,
+          "valid_bootstrap_samples": 10000
+        }
+      }
+    },
+    "no_context": {
+      "counts": {
+        "items": 100,
+        "parseable": 97,
+        "parse_failures": 3,
+        "correct": 97,
+        "wrong_target_adoptions": 0,
+        "baseline_correct_items": 97,
+        "baseline_correct_parse_failures": 0,
+        "baseline_correct_wrong_target_adoptions": 0
+      },
+      "metrics": {
+        "accuracy": {
+          "value": 1.0,
+          "ci_low": 1.0,
+          "ci_high": 1.0,
+          "valid_bootstrap_samples": 10000
+        },
+        "parse_rate": {
+          "value": 0.97,
+          "ci_low": 0.93,
+          "ci_high": 1.0,
+          "valid_bootstrap_samples": 10000
+        },
+        "wrong_target_adoption": {
+          "value": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "valid_bootstrap_samples": 10000
+        },
+        "baseline_correct_adoption": {
+          "value": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "valid_bootstrap_samples": 10000
+        }
+      }
+    }
+  },
+  "difference_direction": "multiple_participants_minus_speaker_free",
+  "paired_differences": {
+    "accuracy": {
+      "value": 0.6361574933003504,
+      "ci_low": 0.5399999999999999,
+      "ci_high": 0.7297979797979798,
+      "valid_bootstrap_samples": 10000
+    },
+    "parse_rate": {
+      "value": 0.010000000000000009,
+      "ci_low": 0.0,
+      "ci_high": 0.030000000000000027,
+      "valid_bootstrap_samples": 10000
+    },
+    "wrong_target_adoption": {
+      "value": -0.6199999999999999,
+      "ci_low": -0.71,
+      "ci_high": -0.52,
+      "valid_bootstrap_samples": 10000
+    },
+    "baseline_correct_adoption": {
+      "value": -0.6288659793814433,
+      "ci_low": -0.7244897959183674,
+      "ci_high": -0.53125,
+      "valid_bootstrap_samples": 10000
+    }
+  },
+  "sequence_length_difference": {
+    "direction": "multiple_participants minus control",
+    "min": 12,
+    "max": 12,
+    "mean": 12.0
+  }
+}

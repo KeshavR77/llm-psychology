@@ -155,6 +155,12 @@ python -m experiments.social_controls.run --experiment speaker_free
 python -m experiments.social_controls.run --experiment single_participant
 ```
 
+For a formatting control, `--experiment speaker_free --speaker-free-format plain-labeled`
+replaces each speaker-free `<answer>B</answer>` line with `Answer: B`; the
+participant and baseline prompts stay unchanged. Use a separate `--output-dir`
+to avoid colliding with the default-format run. `--lines 3` tests three answers
+per answer-present condition. These changes can also be previewed with `--dry-run`.
+
 Defaults are Qwen3-8B, seven answer lines, all 100 local MMLU items in dataset
 order, and seed 42. Generation is greedy with one attempt and a 50-token limit;
 malformed responses are retained. Use `--lines`, `--limit`, and `--seed` to change

@@ -41,6 +41,18 @@ class PromptTests(unittest.TestCase):
             elif condition == "multiple_participants":
                 self.assertEqual(block.splitlines(), [f"Participant {i}: {payload}" for i in range(1, 8)])
 
+    def test_neutral_labeled_answers_change_only_speaker_free_block(self):
+        original = prepare_items(limit=1)[0]
+        labeled = prepare_items(limit=1, speaker_free_format="plain-labeled")[0]
+        self.assertEqual(original["item_id"], labeled["item_id"])
+        self.assertEqual(original["wrong_target"], labeled["wrong_target"])
+        for condition in ("no_context", "multiple_participants", "single_participant"):
+            self.assertEqual(original["prompts"][condition], labeled["prompts"][condition])
+        prefix, suffix = prompt_parts(labeled, labeled["example_answer"])
+        block = "\n".join([f"Answer: {labeled['wrong_target']}"] * 7)
+        self.assertEqual(labeled["prompts"]["speaker_free"], prefix + block + suffix)
+        self.assertEqual(parse_args(["--speaker-free-format", "plain-labeled"]).speaker_free_format, "plain-labeled")
+
     def test_one_line_identity(self):
         item = prepare_items(lines=1, limit=1)[0]
         self.assertEqual(item["prompts"]["multiple_participants"], item["prompts"]["single_participant"])

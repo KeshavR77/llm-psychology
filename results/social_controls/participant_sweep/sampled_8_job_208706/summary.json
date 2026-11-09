@@ -1,0 +1,33 @@
+{
+  "description": "Participants = prior named answer lines + model; the model is not explicitly assigned a participant role.",
+  "conformity_denominator": "parseable outputs, matching the paper plot",
+  "wrong_target_adoption_all_items_denominator": "all selected items; parse failures count as no adoption",
+  "bootstrap": "paired item bootstrap, 10000 resamples, seed 42",
+  "conditions": [
+    {
+      "participants": 8,
+      "prior_answer_lines": 7,
+      "items": 100,
+      "parseable": 100,
+      "parse_failures": 0,
+      "correct": 28,
+      "wrong_target_adoptions": 72,
+      "conformity": 0.72,
+      "conformity_ci_low": 0.63,
+      "conformity_ci_high": 0.81,
+      "conformity_valid_bootstrap_samples": 10000,
+      "wrong_target_adoption_all_items": 0.72,
+      "wrong_target_adoption_all_items_ci_low": 0.63,
+      "wrong_target_adoption_all_items_ci_high": 0.81,
+      "wrong_target_adoption_all_items_valid_bootstrap_samples": 10000,
+      "accuracy": 0.28,
+      "accuracy_ci_low": 0.19,
+      "accuracy_ci_high": 0.37,
+      "accuracy_valid_bootstrap_samples": 10000,
+      "parse_rate": 1.0,
+      "parse_rate_ci_low": 1.0,
+      "parse_rate_ci_high": 1.0,
+      "parse_rate_valid_bootstrap_samples": 10000
+    }
+  ]
+}

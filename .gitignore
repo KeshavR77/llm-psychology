@@ -25,3 +25,9 @@ paper/*.fls
 paper/*.fdb_latexmk
 paper/*.synctex.gz
 paper/main.pdf
+
+# Temporary social-control smoke outputs and Slurm logs
+results/social_controls/smoke/
+/paper-baseline-*.log
+/participant-*.log
+/social-*.log

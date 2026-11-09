@@ -20,6 +20,8 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Isolated MMLU repetition and speaker-attribution controls.")
     parser.add_argument("--experiment", choices=["speaker_free", "single_participant", "both"], default="both")
     parser.add_argument("--lines", type=positive_int, default=7, help="Number of answer lines, not total participants")
+    parser.add_argument("--speaker-free-format", choices=["xml", "plain-labeled"], default="xml",
+                        help="Use bare XML answers or neutral Answer: <letter> lines for the speaker-free condition")
     parser.add_argument("--limit", type=positive_int, default=None)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output-dir", type=Path, default=ROOT / "results" / "social_controls" / "mmlu",
@@ -29,7 +31,7 @@ def parse_args(argv=None):
     return parser.parse_args(argv)
 
 
-def run_inference(runner, items, conditions, parse_answer):
+def run_inference(runner, items, conditions, parse_answer, capture_activations=True, do_sample=False):
     import torch
 
     results = {name: [] for name in conditions}
@@ -44,12 +46,13 @@ def run_inference(runner, items, conditions, parse_answer):
                 inputs = {key: value.to(runner.device) for key, value in inputs.items()}
                 token_ids = inputs["input_ids"][0].tolist()
                 position = len(token_ids) - 1
-                with capture_residuals(runner.model, position) as activations:
-                    runner.model(**inputs, use_cache=False)
-                if len(activations) != len(runner.model.model.layers):
-                    raise RuntimeError("Not all transformer layers produced activations")
-                add_activations(sums[condition], activations)
-                output = runner.generate(**inputs, do_sample=False, max_new_tokens=50)
+                if capture_activations:
+                    with capture_residuals(runner.model, position) as activations:
+                        runner.model(**inputs, use_cache=False)
+                    if len(activations) != len(runner.model.model.layers):
+                        raise RuntimeError("Not all transformer layers produced activations")
+                    add_activations(sums[condition], activations)
+                output = runner.generate(**inputs, do_sample=do_sample, max_new_tokens=50)
                 response_ids = output["sequences"][0, len(token_ids):].tolist()
                 response = tokenizer.decode(response_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
                 answer = parse_answer("mmlu", response)
@@ -79,7 +82,7 @@ def run_inference(runner, items, conditions, parse_answer):
 def main(argv=None):
     args = parse_args(argv)
     conditions = selected_conditions(args.experiment)
-    items = prepare_items(args.lines, args.seed, args.limit)
+    items = prepare_items(args.lines, args.seed, args.limit, speaker_free_format=args.speaker_free_format)
     if args.dry_run:
         preview = [{**item, "prompts": {name: item["prompts"][name] for name in conditions}} for item in items]
         print(json.dumps({"conditions": conditions, "sample_count": len(items), "items": preview}, indent=2))
@@ -113,6 +116,7 @@ def main(argv=None):
         "dataset": "mmlu", "data_file": str(DATA_FILE), "sample_count": len(items),
         "item_ids": [item["item_id"] for item in items], "lines": args.lines,
         "seed": args.seed, "limit": args.limit, "conditions": conditions,
+        "speaker_free_format": args.speaker_free_format,
         "input_encoding": "raw", "do_sample": False, "max_new_tokens": 50,
         "generation_attempts": 1, "activation_kind": "residual",
         "position": "last_prompt_token", "bootstrap_samples": 10_000, "bootstrap_seed": 42,

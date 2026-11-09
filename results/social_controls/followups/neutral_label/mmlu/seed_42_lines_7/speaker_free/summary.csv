@@ -1,0 +1,17 @@
+condition,metric,value,ci_low,ci_high,valid_bootstrap_samples
+multiple_participants,accuracy,0.2222222222222222,0.14285714285714285,0.30929639175257706,10000
+multiple_participants,parse_rate,0.99,0.97,1.0,10000
+multiple_participants,wrong_target_adoption,0.77,0.68,0.85,10000
+multiple_participants,baseline_correct_adoption,0.7628865979381443,0.6736842105263158,0.845360824742268,10000
+speaker_free,accuracy,0.14,0.08,0.21,10000
+speaker_free,parse_rate,1.0,1.0,1.0,10000
+speaker_free,wrong_target_adoption,0.86,0.79,0.92,10000
+speaker_free,baseline_correct_adoption,0.8556701030927835,0.7835051546391752,0.9191919191919192,10000
+no_context,accuracy,1.0,1.0,1.0,10000
+no_context,parse_rate,0.97,0.93,1.0,10000
+no_context,wrong_target_adoption,0.0,0.0,0.0,10000
+no_context,baseline_correct_adoption,0.0,0.0,0.0,10000
+multiple_participants_minus_speaker_free,accuracy,0.0822222222222222,0.011919191919191913,0.15681185567010297,10000
+multiple_participants_minus_speaker_free,parse_rate,-0.010000000000000009,-0.030000000000000027,0.0,10000
+multiple_participants_minus_speaker_free,wrong_target_adoption,-0.08999999999999997,-0.16999999999999993,-0.020000000000000018,10000
+multiple_participants_minus_speaker_free,baseline_correct_adoption,-0.09278350515463918,-0.1717171717171717,-0.020408163265306145,10000
