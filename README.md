@@ -132,6 +132,77 @@ Outputs:
 - `paper/figures/qwen_accuracy_by_participants.{pdf,png}`
 - `paper/figures/qwen_mitigation_conformity.{pdf,png}`
 
+## Repetition and Speaker Attribution Controls
+
+These isolated experiments use the fixed 100-item MMLU subset and raw,
+answer-only prompts. Seven identical wrong answers are attributed to seven
+participants, left unattributed, or attributed repeatedly to Participant 1.
+Instructions, questions, answer examples, and the final response cue are shared.
+A no-context baseline is evaluated once, as is the multiple-participant reference.
+Existing behavioral and layer-sweep experiments are unchanged.
+
+Preview every selected prompt without model dependencies or output files:
+
+```bash
+python -m experiments.social_controls.run --dry-run
+```
+
+Run both comparisons, or select one independently:
+
+```bash
+python -m experiments.social_controls.run
+python -m experiments.social_controls.run --experiment speaker_free
+python -m experiments.social_controls.run --experiment single_participant
+```
+
+Defaults are Qwen3-8B, seven answer lines, all 100 local MMLU items in dataset
+order, and seed 42. Generation is greedy with one attempt and a 50-token limit;
+malformed responses are retained. Use `--lines`, `--limit`, and `--seed` to change
+the run. A two-item GPU smoke run, followed by the full experiment, can use:
+
+```bash
+python -m experiments.social_controls.run --limit 2 --output-dir /tmp/social_controls_smoke
+python -m experiments.social_controls.run
+```
+
+Outputs default to `results/social_controls/mmlu/seed_42_lines_7/`:
+
+- `run.json` records configuration, item IDs, model/tokenizer identifiers, and repository revision.
+- `shared/` contains the no-context and multiple-participant behavioral records.
+- `speaker_free/` and `single_participant/` each contain `behavioral.json`,
+  `analysis.json`, `summary.csv`, `summary.md`, and `diffmeans.pt`.
+- `activation_summary.{json,csv}` reports layer-wise norms and, when both
+  comparisons are run, cosine similarities between the two directions. Cosine
+  similarity is undefined (`null` in JSON) for a zero-norm direction.
+
+The summaries report parse failures, accuracy among parseable outputs, wrong-target
+adoption among all items, and adoption among items correct in the new no-context
+baseline. Parse failures count as no adoption and remain in adoption denominators.
+Intervals use 10,000 paired item-bootstrap resamples with seed 42. Empty denominators
+are reported as undefined, with the number of valid bootstrap resamples saved.
+
+DiffMeans are the mean **multiple-participant minus control** residual vectors
+over all selected items, captured at the final raw-prompt token. The saved prompts,
+token IDs, positions, and sequence lengths expose length differences; no padding
+is added. The `diffmeans` mapping is compatible with existing vector loaders.
+These are descriptive contrasts of explicit attribution and distinct-source
+agreement, not established pure conformity directions. Steering and paper
+integration are separate follow-up work.
+
+`--output-dir` changes the parent directory; the seed/line subdirectory is always
+appended. Existing nonempty run directories are rejected. `--overwrite` replaces
+that entire run directory, including previous experiment selections. Rebuild
+summaries without rerunning inference using:
+
+```bash
+python -m experiments.social_controls.analyze results/social_controls/mmlu/seed_42_lines_7
+python -m unittest experiments.social_controls.test_social_controls
+```
+
+The tests use synthetic tensors and a tiny fake runner; they do not download model
+weights. Tensor tests require PyTorch. A real Qwen GPU smoke run is still required
+to verify the deployment environment before a full run.
+
 ## DiffMean Directions and Activation Oracles
 
 The main activation direction is the MMLU `n=8`
