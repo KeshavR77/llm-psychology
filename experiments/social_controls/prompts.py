@@ -24,6 +24,8 @@ def answer_block(condition, wrong_answer, lines, speaker_free_format="xml"):
     if condition == "speaker_free":
         if speaker_free_format == "plain-labeled":
             return "\n".join([f"Answer: {wrong_answer}"] * lines)
+        if speaker_free_format == "answer-tagged":
+            return "\n".join([f"Answer: {payload}"] * lines)
         if speaker_free_format != "xml":
             raise ValueError(f"Unknown speaker-free format: {speaker_free_format}")
         return "\n".join([payload] * lines)

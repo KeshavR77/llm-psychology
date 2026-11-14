@@ -53,6 +53,22 @@ class PromptTests(unittest.TestCase):
         self.assertEqual(labeled["prompts"]["speaker_free"], prefix + block + suffix)
         self.assertEqual(parse_args(["--speaker-free-format", "plain-labeled"]).speaker_free_format, "plain-labeled")
 
+    def test_answer_tagged_changes_only_neutral_answer_payload(self):
+        plain = prepare_items(speaker_free_format="plain-labeled")
+        tagged = prepare_items(speaker_free_format="answer-tagged")
+        self.assertEqual(len(plain), 100)
+        for original, changed in zip(plain, tagged):
+            self.assertEqual(original["item_id"], changed["item_id"])
+            self.assertEqual(original["wrong_target"], changed["wrong_target"])
+            self.assertEqual(original["example_answer"], changed["example_answer"])
+            for condition in ("no_context", "multiple_participants", "single_participant"):
+                self.assertEqual(original["prompts"][condition], changed["prompts"][condition])
+            prefix, suffix = prompt_parts(changed, changed["example_answer"])
+            payload = f"<answer>{changed['wrong_target']}</answer>"
+            expected = "\n".join([f"Answer: {payload}"] * 7)
+            self.assertEqual(changed["prompts"]["speaker_free"], prefix + expected + suffix)
+        self.assertEqual(parse_args(["--speaker-free-format", "answer-tagged"]).speaker_free_format, "answer-tagged")
+
     def test_one_line_identity(self):
         item = prepare_items(lines=1, limit=1)[0]
         self.assertEqual(item["prompts"]["multiple_participants"], item["prompts"]["single_participant"])
@@ -192,6 +208,39 @@ class ActivationTests(unittest.TestCase):
         import torch
         for vector in make_diffmeans(sums["multiple_participants"], sums["single_participant"], 2).values():
             torch.testing.assert_close(vector, torch.zeros(4))
+
+    def test_behavioral_only_answer_tagged_run(self):
+        import torch
+        from .analyze import analyze_run
+
+        runner = make_fake_runner()
+        calls = []
+        def generate(input_ids, attention_mask=None, do_sample=True, max_new_tokens=None):
+            self.assertFalse(do_sample)
+            self.assertEqual(max_new_tokens, 50)
+            self.assertTrue(all(not layer._forward_hooks for layer in runner.model.model.layers))
+            calls.append(input_ids)
+            response = torch.tensor([[ord(c) for c in "<answer>B</answer>"]])
+            return {"sequences": torch.cat([input_ids, response], dim=1)}
+        runner.generate = generate
+        fake_module = types.SimpleNamespace(MODEL_IDS={"qwen": "fake-qwen"},
+                                            load_model=lambda name: (runner, "cpu"), parse_answer=fake_parse)
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(sys.modules, {"multi_actor": fake_module}):
+            with contextlib.redirect_stdout(io.StringIO()):
+                main(["--limit", "2", "--experiment", "speaker_free", "--speaker-free-format",
+                      "answer-tagged", "--no-activations", "--output-dir", tmp])
+            root = Path(tmp) / "seed_42_lines_7"
+            manifest = json.loads((root / "run.json").read_text())
+            self.assertEqual(manifest["status"], "complete")
+            self.assertEqual(manifest["speaker_free_format"], "answer-tagged")
+            self.assertFalse(manifest["activation_collection"])
+            self.assertEqual(runner.model.prefill_calls, 0)
+            self.assertEqual(len(calls), 6)
+            for name in ("behavioral.json", "analysis.json", "summary.csv", "summary.md"):
+                self.assertTrue((root / "speaker_free" / name).is_file())
+            self.assertFalse((root / "speaker_free" / "diffmeans.pt").exists())
+            self.assertFalse((root / "activation_summary.json").exists())
+            analyze_run(root)
 
     def test_two_item_end_to_end_and_overwrite_guard(self):
         import torch

@@ -151,7 +151,7 @@ def write_summary(directory, summary):
     def fmt(value):
         return "undefined" if value is None else f"{value:.4f}"
 
-    lines = ["# Social attribution control", "", INTERPRETATION, "",
+    lines = ["# Social attribution control", "", summary["interpretation"], "",
              "| Condition | Metric | Estimate | Paired item-bootstrap 95% interval |",
              "| --- | --- | ---: | --- |"]
     for name, data in summary["conditions"].items():
@@ -173,13 +173,25 @@ def analyze_run(run_dir):
     reference = json.loads((run_dir / "shared" / "multiple_participants.json").read_text())["results"]
     baseline = json.loads((run_dir / "shared" / "no_context.json").read_text())["results"]
     vectors = {}
-    import torch
+    collect_activations = manifest.get("activation_collection", True)
+    if collect_activations:
+        import torch
 
     for control in manifest["controls"]:
         directory = run_dir / control
         records = json.loads((directory / "behavioral.json").read_text())["results"]
-        write_summary(directory, summarize(reference, records, baseline))
-        vectors[control] = torch.load(directory / "diffmeans.pt", map_location="cpu", weights_only=True)["diffmeans"]
+        summary = summarize(reference, records, baseline)
+        if not collect_activations:
+            summary["interpretation"] = (
+                "Behavioral comparison using matched questions and answer content. "
+                "These results do not establish a pure conformity mechanism. "
+                "Token lengths are reported without artificial padding."
+            )
+        write_summary(directory, summary)
+        if collect_activations:
+            vectors[control] = torch.load(directory / "diffmeans.pt", map_location="cpu", weights_only=True)["diffmeans"]
+    if not collect_activations:
+        return
     layers = sorted(vectors[manifest["controls"][0]])
     layer_rows = []
     for layer in layers:

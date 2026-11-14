@@ -20,12 +20,13 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Isolated MMLU repetition and speaker-attribution controls.")
     parser.add_argument("--experiment", choices=["speaker_free", "single_participant", "both"], default="both")
     parser.add_argument("--lines", type=positive_int, default=7, help="Number of answer lines, not total participants")
-    parser.add_argument("--speaker-free-format", choices=["xml", "plain-labeled"], default="xml",
-                        help="Use bare XML answers or neutral Answer: <letter> lines for the speaker-free condition")
+    parser.add_argument("--speaker-free-format", choices=["xml", "plain-labeled", "answer-tagged"], default="xml",
+                        help="Speaker-free lines: bare XML, Answer: <letter>, or Answer: <answer><letter></answer>")
     parser.add_argument("--limit", type=positive_int, default=None)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output-dir", type=Path, default=ROOT / "results" / "social_controls" / "mmlu",
                         help="Parent directory; a seed_<seed>_lines_<lines> run directory is appended")
+    parser.add_argument("--no-activations", action="store_true", help="Run behavior only and omit activation artifacts")
     parser.add_argument("--dry-run", action="store_true", help="Print all selected prompts as JSON without loading weights or writing outputs")
     parser.add_argument("--overwrite", action="store_true", help="Replace the selected run directory and all its previous outputs")
     return parser.parse_args(argv)
@@ -118,24 +119,26 @@ def main(argv=None):
         "seed": args.seed, "limit": args.limit, "conditions": conditions,
         "speaker_free_format": args.speaker_free_format,
         "input_encoding": "raw", "do_sample": False, "max_new_tokens": 50,
-        "generation_attempts": 1, "activation_kind": "residual",
+        "generation_attempts": 1, "activation_collection": not args.no_activations,
+        "activation_kind": None if args.no_activations else "residual",
         "position": "last_prompt_token", "bootstrap_samples": 10_000, "bootstrap_seed": 42,
     }
     write_json(run_dir / "run.json", manifest)
-    results, sums = run_inference(runner, items, conditions, parse_answer)
+    results, sums = run_inference(runner, items, conditions, parse_answer, capture_activations=not args.no_activations)
     for condition, records in results.items():
         directory = run_dir / ("shared" if condition in ("no_context", "multiple_participants") else condition)
         directory.mkdir(exist_ok=True)
         name = f"{condition}.json" if directory.name == "shared" else "behavioral.json"
         write_json(directory / name, {"condition": condition, "results": records})
-    for control in controls:
-        vectors = make_diffmeans(sums["multiple_participants"], sums[control], len(items))
-        torch.save({
-            **manifest,
-            "status": "complete",
-            "direction": f"multiple_participants_minus_{control}",
-            "layers": sorted(vectors), "diffmeans": vectors,
-        }, run_dir / control / "diffmeans.pt")
+    if not args.no_activations:
+        for control in controls:
+            vectors = make_diffmeans(sums["multiple_participants"], sums[control], len(items))
+            torch.save({
+                **manifest,
+                "status": "complete",
+                "direction": f"multiple_participants_minus_{control}",
+                "layers": sorted(vectors), "diffmeans": vectors,
+            }, run_dir / control / "diffmeans.pt")
     analyze_run(run_dir)
     manifest["status"] = "complete"
     write_json(run_dir / "run.json", manifest)

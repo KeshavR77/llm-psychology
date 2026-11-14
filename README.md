@@ -157,7 +157,9 @@ python -m experiments.social_controls.run --experiment single_participant
 
 For a formatting control, `--experiment speaker_free --speaker-free-format plain-labeled`
 replaces each speaker-free `<answer>B</answer>` line with `Answer: B`; the
-participant and baseline prompts stay unchanged. Use a separate `--output-dir`
+participant and baseline prompts stay unchanged. Use `--speaker-free-format answer-tagged`
+for `Answer: <answer>B</answer>`, and `--no-activations` for behavioral-only runs.
+Use a separate `--output-dir`
 to avoid colliding with the default-format run. `--lines 3` tests three answers
 per answer-present condition. These changes can also be previewed with `--dry-run`.
 
