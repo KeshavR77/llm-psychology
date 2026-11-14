@@ -158,7 +158,8 @@ def parse_answer(dataset, response):
 
 
 def run_experiment(model_name, dataset, mode, explain=False, model=None, device=None, output_file=None, batch_size=None,
-                   steering_vector=None, steering_layer=None, steering_alpha=None, seed=None):
+                   steering_vector=None, steering_layer=None, steering_alpha=None, seed=None,
+                   steering_intervention="addition", steering_beta=1.0):
     n, use_qd, use_da = parse_mode(mode)
     if model is None:
         model, device = load_model(model_name, device=device)
@@ -170,7 +171,8 @@ def run_experiment(model_name, dataset, mode, explain=False, model=None, device=
     if steering_vector is not None:
         if steering_layer is None or steering_alpha is None:
             raise ValueError("steering_vector requires steering_layer and steering_alpha")
-        steering_ctx = steering_hook(model.model, steering_layer, steering_vector, steering_alpha)
+        steering_ctx = steering_hook(model.model, steering_layer, steering_vector, steering_alpha,
+                                     intervention=steering_intervention, beta=steering_beta)
     else:
         steering_ctx = nullcontext()
 
@@ -463,6 +465,9 @@ def run_experiment(model_name, dataset, mode, explain=False, model=None, device=
         summary["steering"] = {
             "layer": steering_layer,
             "alpha": steering_alpha,
+            "intervention": steering_intervention,
+            "beta": steering_beta if steering_intervention == "projection" else None,
+            "token_scope": "all_prompt_and_generated_tokens",
         }
     if seed is not None:
         summary["seed"] = seed

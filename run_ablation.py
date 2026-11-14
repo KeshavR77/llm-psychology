@@ -6,8 +6,9 @@ Two modes:
   * no --layer:        per-layer vectors — each block i is hooked with
     diffmeans[i] (default).
 
-For each alpha, one ablation pass is run. The matching baseline (alpha=0) is
-opt-in via --baseline.
+For each alpha, one additive pass is run. Separate projection-removal runs
+are enabled by default, with a matching baseline. Use --no-projections for
+legacy addition-only behavior (baseline opt-in via --baseline).
 
 Output filenames written under --output-dir:
   --layer L:   qwen_{dataset}_{mode}_ablation_layer{L}_alpha{a:g}.json
@@ -25,7 +26,7 @@ from pathlib import Path
 import torch
 
 from multi_actor import MODEL_IDS, CausalLMRunner, run_experiment
-from steering import make_resid_add_hook
+from steering import make_resid_add_hook, make_resid_project_hook
 
 
 # Default experiment parameters from the original patching branch.
@@ -84,13 +85,17 @@ def load_diffmeans_dict(path: Path) -> dict[int, torch.Tensor]:
 
 
 @contextmanager
-def per_layer_ablation_hook(runner: CausalLMRunner, diffmeans: dict[int, torch.Tensor], alpha: float):
-    """Register a residual-add hook on every transformer block of
-    runner.model.model.layers, where each block L adds `alpha * diffmeans[L]`
-    to its residual stream. All hooks are removed on context exit.
+def per_layer_ablation_hook(runner: CausalLMRunner, diffmeans: dict[int, torch.Tensor], alpha: float,
+                            intervention: str = "addition"):
+    """Intervene at every block output with addition or projection removal.
+
+    `alpha` is the additive coefficient, or removal beta for projection.
+    All hooks are removed on context exit.
 
     Raises KeyError if any layer index is missing from the diffmeans dict.
     """
+    if intervention not in {"addition", "projection"}:
+        raise ValueError(f"Unknown intervention: {intervention}")
     layers = runner.model.model.layers
     missing = [i for i in range(len(layers)) if i not in diffmeans]
     if missing:
@@ -99,14 +104,15 @@ def per_layer_ablation_hook(runner: CausalLMRunner, diffmeans: dict[int, torch.T
     handles = []
     try:
         for i, layer_module in enumerate(layers):
-            handles.append(layer_module.register_forward_hook(make_resid_add_hook(diffmeans[i], alpha)))
+            handles.append(layer_module.register_forward_hook((make_resid_project_hook(diffmeans[i], alpha)
+                if intervention == "projection" else make_resid_add_hook(diffmeans[i], alpha))))
         yield runner
     finally:
         for h in handles:
             h.remove()
 
 
-def annotate_summary(path: Path, alpha: float, n_layers: int, source_layer: int | None) -> None:
+def annotate_summary(path: Path, alpha: float, n_layers: int, source_layer: int | None, intervention: str = "addition") -> None:
     """Re-open the JSON written by run_experiment and add ablation metadata
     (run_experiment doesn't know about the hook we wrap it in)."""
     with path.open("r") as f:
@@ -118,7 +124,10 @@ def annotate_summary(path: Path, alpha: float, n_layers: int, source_layer: int 
         new_summary[k] = v
     steering = {
         "layer": "all",
-        "alpha": alpha,
+        "alpha": alpha if intervention == "addition" else 0.0,
+        "intervention": intervention,
+        "beta": alpha if intervention == "projection" else None,
+        "token_scope": "all_prompt_and_generated_tokens",
         "n_layers_hooked": n_layers,
     }
     if source_layer is None:
@@ -151,7 +160,13 @@ def main():
                     help=f"If set (0..{MAX_LAYER}), apply diffmeans[--layer] as a CONSTANT "
                          f"vector at every transformer block. If omitted, each block i is "
                          f"hooked with its own diffmeans[i] (per-layer ablation).")
+    ap.add_argument("--projection-betas", type=float, nargs="+", default=[0.25, 0.5, 0.75, 1.0],
+                    help="Separate projection-removal runs (default: .25 .5 .75 1).")
+    ap.add_argument("--no-projections", action="store_true", help="Run only legacy additive steering.")
+    ap.add_argument("--dry-run", action="store_true", help="Print plan without loading the model.")
     args = ap.parse_args()
+    if any(not 0 < b <= 1 for b in args.projection_betas):
+        ap.error("--projection-betas must be in (0, 1]")
 
     if args.layer is not None and not (0 <= args.layer <= MAX_LAYER):
         raise ValueError(f"--layer must be in 0..{MAX_LAYER} for {MODEL_NAME}, got {args.layer}")
@@ -170,7 +185,7 @@ def main():
 
     # Plan: optional baseline (only if --baseline), then ablation runs.
     plan = []  # list of (kind, path, alpha-or-None)
-    if args.baseline:
+    if args.baseline or not args.no_projections:
         existing = find_existing_baseline(args.output_dir, args.dataset, args.mode)
         if existing and not args.force:
             print(f"[skip] mode={args.mode} baseline already exists: {existing.name}")
@@ -183,6 +198,15 @@ def main():
             print(f"[skip] alpha={fmt_alpha(a)} mode={args.mode}: {sp.name}")
         else:
             plan.append(("ablation", sp, a))
+
+    if not args.no_projections:
+        label = "perlayer" if args.layer is None else f"layer{args.layer}"
+        for beta in sorted(set(args.projection_betas)):
+            sp = args.output_dir / f"{MODEL_NAME}_{args.dataset}_{args.mode}_projection_{label}_beta{beta:g}.json"
+            if sp.exists() and not args.force:
+                print(f"[skip] projection: {sp.name}")
+            else:
+                plan.append(("projection", sp, beta))
 
     if not plan:
         print("\nNothing to run — all targets already exist. Use --force to overwrite.")
@@ -200,13 +224,16 @@ def main():
         hook_desc = f"every layer hooked with the same diffmeans[{args.layer}]"
     print(f"Mode: {args.mode}  ·  alphas: {args.alphas}")
     print(f"Hook: {hook_desc}")
-    print(f"Planned runs: {n_baselines} baseline(s) + {n_ablations} ablation = {len(plan)} total")
+    print(f"Planned runs: {n_baselines} baseline(s) + {n_ablations} additive + {sum(p[0] == 'projection' for p in plan)} projection = {len(plan)} total")
     label = "per-layer" if args.layer is None else f"layer{args.layer}"
     for kind, path, a in plan:
         if kind == "baseline":
             print(f"  - mode={args.mode} baseline                       → {path.name}")
         else:
-            print(f"  - mode={args.mode} {label} alpha={fmt_alpha(a):<6}         → {path.name}")
+            print(f"  - mode={args.mode} {label} {('beta' if kind == 'projection' else 'alpha')}={fmt_alpha(a):<6}         → {path.name}")
+
+    if args.dry_run:
+        return
 
     runner = CausalLMRunner(MODEL_IDS[MODEL_NAME])
     n_layers = len(runner.model.model.layers)
@@ -223,14 +250,15 @@ def main():
             )
         else:
             tag = "per-layer" if args.layer is None else f"layer{args.layer}-constant"
-            print(f"ABLATION mode={args.mode} {tag} alpha={a} (seed={args.seed})")
-            with per_layer_ablation_hook(runner, effective_diffmeans, a):
+            print(f"{kind.upper()} mode={args.mode} {tag} coefficient={a} (seed={args.seed})")
+            intervention = "projection" if kind == "projection" else "addition"
+            with per_layer_ablation_hook(runner, effective_diffmeans, a, intervention):
                 run_experiment(
                     MODEL_NAME, args.dataset, args.mode, args.explain,
                     model=runner, output_file=str(path), batch_size=args.batch_size,
                     seed=args.seed,
                 )
-            annotate_summary(path, a, n_layers, args.layer)
+            annotate_summary(path, a, n_layers, args.layer, intervention)
         print(f"  wrote {path}")
 
     print("\nDone.")

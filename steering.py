@@ -35,36 +35,49 @@ def make_resid_add_hook(vec: torch.Tensor, alpha: float):
     return hook
 
 
-def make_resid_project_hook(vec: torch.Tensor):
+def make_resid_project_hook(vec: torch.Tensor, beta: float = 1.0):
     """Project the residual stream onto the orthogonal complement of `vec`,
     i.e. remove the component along `vec` at every token position:
-        h ← h − (h · v̂) v̂,   v̂ = vec / ‖vec‖.
+        h ← h − beta (h · v̂) v̂,   v̂ = vec / ‖vec‖.
+    beta=1 fully removes the direction; smaller values partially remove it.
+    Projection arithmetic uses float32 and preserves the output dtype.
     """
-    v_unit = vec / vec.norm().clamp_min(1e-12)
+    if not 0 <= beta <= 1:
+        raise ValueError("projection beta must be in [0, 1]")
+    v_float = vec.detach().float()
+    norm = v_float.norm()
+    if not torch.isfinite(v_float).all() or not torch.isfinite(norm) or norm == 0:
+        raise ValueError("projection direction must be finite and nonzero")
+    v_unit = v_float / norm
 
     def hook(module, inputs, output):
         if isinstance(output, tuple):
             h = output[0]
-            v = v_unit.to(h.dtype).to(h.device)
-            coeff = (h * v).sum(dim=-1, keepdim=True)
-            h = h - coeff * v
+            v = v_unit.to(h.device)
+            coeff = (h.float() * v).sum(dim=-1, keepdim=True)
+            h = (h.float() - beta * coeff * v).to(h.dtype)
             return (h,) + output[1:]
         h = output
-        v = v_unit.to(h.dtype).to(h.device)
-        coeff = (h * v).sum(dim=-1, keepdim=True)
-        return h - coeff * v
+        v = v_unit.to(h.device)
+        coeff = (h.float() * v).sum(dim=-1, keepdim=True)
+        return (h.float() - beta * coeff * v).to(h.dtype)
 
     return hook
 
 
 @contextmanager
-def steering_hook(model, layer: int, vector: torch.Tensor, alpha: float):
+def steering_hook(model, layer: int, vector: torch.Tensor, alpha: float,
+                  intervention: str = "addition", beta: float = 1.0):
     """Register an activation-steering forward hook on model.model.layers[layer]
-    that adds alpha * vector to the residual stream during inference. Expects a
+    for addition (alpha * vector) or directional removal (beta). Expects a
     HuggingFace causal LM with a `.model.layers` ModuleList (Qwen / Llama style).
     The hook is removed automatically on context exit."""
     target = model.model.layers[layer]
-    handle = target.register_forward_hook(make_resid_add_hook(vector, alpha))
+    if intervention not in {"addition", "projection"}:
+        raise ValueError(f"Unknown intervention: {intervention}")
+    hook = (make_resid_project_hook(vector, beta) if intervention == "projection"
+            else make_resid_add_hook(vector, alpha))
+    handle = target.register_forward_hook(hook)
     try:
         yield model
     finally:

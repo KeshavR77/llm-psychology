@@ -228,6 +228,33 @@ python run_ablation.py --dataset bbh --mode 3 --alphas 0.1 --layer 23 --baseline
 python run_ablation.py --dataset bbh --mode 10 --alphas -0.1 --layer 23 --baseline --output-dir results/activation_patching/qwen_bbh_ablation --seed 42
 ```
 
+Both runners now also schedule separate directional-ablation runs by default:
+
+```math
+h' = h - \beta (h^\top \hat d)\hat d, \qquad \hat d=d/\|d\|_2.
+```
+
+The default `--projection-betas 0.25 0.5 0.75 1` includes partial removal and
+full orthogonal projection (`beta=1`). These are separate conditions alongside
+addition/subtraction, not sequential operations within the same run. Hooks act
+at block outputs on all prompt and generated token positions. The single-layer
+runner uses each selected layer's own direction and runs removal in each mode
+selected by the alpha signs. The all-layer runner uses either per-layer vectors
+or the fixed `--layer` direction, just as for addition. With projections enabled,
+the all-layer runner also ensures a matching baseline is scheduled.
+
+Projection results have distinct `*_projection_*beta*.json` filenames; steering
+metadata records intervention type, beta, and token scope. Existing outputs are
+skipped independently, so rerunning the commands above adds missing projection
+conditions. Use a fresh output directory when changing seed or prompt settings,
+as legacy output names do not encode those settings.
+
+Pass `--projection-betas 1` for full removal only, `--no-projections` for legacy
+addition/subtraction only, or `--dry-run` to inspect the plan without loading a
+model. These runs test dependence on the extracted direction; they do not alone
+establish that it exclusively represents conformity. Random-direction controls
+and held-out direction extraction remain separate experimental considerations.
+
 ## Build the Paper
 
 ```bash

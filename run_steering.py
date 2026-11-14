@@ -12,6 +12,9 @@ Output filenames written under --output-dir:
   steered:  {model}_{dataset}_{mode}_layer{L}_alpha{a:g}.json
   baseline: {model}_{dataset}_{mode}_baseline.json
 
+Separate projection-removal runs are enabled by default per layer and mode,
+with beta in {.25, .5, .75, 1}. Use --no-projections for addition only.
+
 Existing files are skipped (so re-running with extra layers/alphas is cheap).
 A baseline is also considered to exist if any file matching
   {model}_{dataset}_{mode}_*baseline*.json
@@ -92,7 +95,13 @@ def main():
     ap.add_argument("--batch-size", type=int, default=None)
     ap.add_argument("--force", action="store_true",
                     help="Overwrite existing output files instead of skipping them.")
+    ap.add_argument("--projection-betas", type=float, nargs="+", default=[0.25, 0.5, 0.75, 1.0],
+                    help="Separate projection-removal runs (default: .25 .5 .75 1).")
+    ap.add_argument("--no-projections", action="store_true", help="Run only legacy additive steering.")
+    ap.add_argument("--dry-run", action="store_true", help="Print plan without loading the model.")
     args = ap.parse_args()
+    if any(not 0 < b <= 1 for b in args.projection_betas):
+        ap.error("--projection-betas must be in (0, 1]")
 
     model_name = args.model
     max_layer = MODEL_MAX_LAYER[model_name]
@@ -135,6 +144,16 @@ def main():
             else:
                 plan.append(("steered", sp, mode, L, a))
 
+    if not args.no_projections:
+        for L in sorted(args.layers):
+            for mode in sorted(modes_present):
+                for beta in sorted(set(args.projection_betas)):
+                    sp = args.output_dir / f"{model_name}_{args.dataset}_{mode}_layer{L}_projection_beta{beta:g}.json"
+                    if sp.exists() and not args.force:
+                        print(f"[skip] projection: {sp.name}")
+                    else:
+                        plan.append(("projection", sp, mode, L, beta))
+
     if not plan:
         print("\nNothing to run — all targets already exist. Use --force to overwrite.")
         return
@@ -142,14 +161,17 @@ def main():
     n_baselines = sum(1 for p in plan if p[0] == "baseline")
     n_steered = sum(1 for p in plan if p[0] == "steered")
     print(f"\nModel: {model_name} ({MODEL_IDS[model_name]})")
-    print(f"Planned runs: {n_baselines} baseline(s) + {n_steered} steered = {len(plan)} total")
+    print(f"Planned runs: {n_baselines} baseline(s) + {n_steered} steered + {sum(p[0] == 'projection' for p in plan)} projection = {len(plan)} total")
     for kind, path, mode, L, a in plan[:30]:
         if kind == "baseline":
             print(f"  - mode={mode:<3} baseline                  → {path.name}")
         else:
-            print(f"  - mode={mode:<3} layer={L:<2} alpha={fmt_alpha(a):<6}  → {path.name}")
+            print(f"  - mode={mode:<3} layer={L:<2} {('beta' if kind == 'projection' else 'alpha')}={fmt_alpha(a):<6}  → {path.name}")
     if len(plan) > 30:
         print(f"  ... and {len(plan) - 30} more")
+
+    if args.dry_run:
+        return
 
     runner = CausalLMRunner(MODEL_IDS[model_name])
 
@@ -163,11 +185,13 @@ def main():
                 seed=args.seed,
             )
         else:
-            print(f"STEERED mode={mode} layer={L} alpha={a} seed={args.seed}")
+            print(f"{kind.upper()} mode={mode} layer={L} coefficient={a} seed={args.seed}")
             run_experiment(
                 model_name, args.dataset, mode, args.explain,
                 model=runner, output_file=str(path), batch_size=args.batch_size,
-                steering_vector=diffmeans[L], steering_layer=L, steering_alpha=a,
+                steering_vector=diffmeans[L], steering_layer=L, steering_alpha=0.0 if kind == "projection" else a,
+                steering_intervention="projection" if kind == "projection" else "addition",
+                steering_beta=a if kind == "projection" else 1.0,
                 seed=args.seed,
             )
         print(f"  wrote {path}")
