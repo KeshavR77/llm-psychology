@@ -23,6 +23,7 @@ from pathlib import Path
 import torch
 
 from multi_actor import MODEL_IDS, CausalLMRunner, run_experiment
+from pipeline_config import REDUX_DATA, STEERING_DIR, REFERENCE_VECTOR
 
 
 # Maximum layer index per supported model (0..MAX inclusive).
@@ -83,7 +84,7 @@ def main():
     ap.add_argument("--alphas", type=float, nargs="+", required=True,
                     help="One or more nonzero alphas. Positive→mode '3', negative→mode '10'. "
                          "One baseline per mode present (layer-independent).")
-    ap.add_argument("--output-dir", type=Path, default=Path("results/activation_patching"),
+    ap.add_argument("--output-dir", type=Path, default=STEERING_DIR,
                     help="Directory for output JSONs (default: results/activation_patching/).")
     ap.add_argument("--dataset", choices=["mmlu", "bbh"], default="mmlu")
     ap.add_argument("--explain", action="store_true")
@@ -160,7 +161,7 @@ def main():
             run_experiment(
                 model_name, args.dataset, mode, args.explain,
                 model=runner, output_file=str(path), batch_size=args.batch_size,
-                seed=args.seed,
+                seed=args.seed, dataset_file=REDUX_DATA if args.dataset == "mmlu" else None,
             )
         else:
             print(f"STEERED mode={mode} layer={L} alpha={a} seed={args.seed}")
@@ -168,7 +169,7 @@ def main():
                 model_name, args.dataset, mode, args.explain,
                 model=runner, output_file=str(path), batch_size=args.batch_size,
                 steering_vector=diffmeans[L], steering_layer=L, steering_alpha=a,
-                seed=args.seed,
+                seed=args.seed, dataset_file=REDUX_DATA if args.dataset == "mmlu" else None,
             )
         print(f"  wrote {path}")
 

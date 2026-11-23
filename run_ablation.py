@@ -25,6 +25,7 @@ from pathlib import Path
 import torch
 
 from multi_actor import MODEL_IDS, CausalLMRunner, run_experiment
+from pipeline_config import REDUX_DATA, STEERING_DIR, REFERENCE_VECTOR
 from steering import make_resid_add_hook
 
 
@@ -33,10 +34,7 @@ MODEL_NAME = "qwen"
 DEFAULT_MODE = "10"
 DEFAULT_ALPHAS = [-0.15, -0.2]
 MAX_LAYER = 35  # qwen3-8B has 36 transformer blocks (0..35)
-VECTOR_PATH = Path(
-    "results/layer_sweep/qwen/"
-    "layer_sweep_qwen_mmlu_mode_8_base_residual_assistant_start_all_wrong_minus_random_answers_n8_100_diffmeans.pt"
-)
+VECTOR_PATH = REFERENCE_VECTOR
 
 
 def fmt_alpha(a: float) -> str:
@@ -134,7 +132,7 @@ def annotate_summary(path: Path, alpha: float, n_layers: int, source_layer: int 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--output-dir", type=Path, default=Path("results/activation_patching"),
+    ap.add_argument("--output-dir", type=Path, default=STEERING_DIR,
                     help="Directory for output JSONs (default: results/activation_patching/).")
     ap.add_argument("--dataset", choices=["mmlu", "bbh"], default="mmlu")
     ap.add_argument("--mode", choices=["3", "10"], default=DEFAULT_MODE)
@@ -219,7 +217,7 @@ def main():
             run_experiment(
                 MODEL_NAME, args.dataset, args.mode, args.explain,
                 model=runner, output_file=str(path), batch_size=args.batch_size,
-                seed=args.seed,
+                seed=args.seed, dataset_file=REDUX_DATA if args.dataset == "mmlu" else None,
             )
         else:
             tag = "per-layer" if args.layer is None else f"layer{args.layer}-constant"
@@ -228,7 +226,7 @@ def main():
                 run_experiment(
                     MODEL_NAME, args.dataset, args.mode, args.explain,
                     model=runner, output_file=str(path), batch_size=args.batch_size,
-                    seed=args.seed,
+                    seed=args.seed, dataset_file=REDUX_DATA if args.dataset == "mmlu" else None,
                 )
             annotate_summary(path, a, n_layers, args.layer)
         print(f"  wrote {path}")

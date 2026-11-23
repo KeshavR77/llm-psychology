@@ -1,8 +1,11 @@
 import argparse
+import hashlib
 import json
 import random
 import re
 from pathlib import Path
+
+from pipeline_config import LAYER_SWEEP_DIR, REDUX_DATA
 
 import torch
 from peft import LoraConfig
@@ -25,7 +28,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--models", default="qwen", help="Comma-separated model keys.")
     parser.add_argument("--input-dir", type=Path, default=Path("data"))
-    parser.add_argument("--output-dir", type=Path, default=Path("results/layer_sweep"))
+    parser.add_argument("--output-dir", type=Path, default=LAYER_SWEEP_DIR)
     parser.add_argument("--dataset", choices=["mmlu", "bbh"], default="mmlu")
     parser.add_argument(
         "--mode",
@@ -35,7 +38,7 @@ def parse_args():
     parser.add_argument("--n", type=int, default=8)
     parser.add_argument(
         "--limit",
-        default="100",
+        default=None,
         help='Number of questions to sample, or "all" for the full available pool.',
     )
     parser.add_argument("--seed", type=int, default=42)
@@ -89,32 +92,23 @@ def parse_args():
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--qd", action="store_true")
     args = parser.parse_args()
-    args.limit = None if str(args.limit).lower() == "all" else int(args.limit)
+    if args.limit is None:
+        args.limit = 500 if args.dataset == "mmlu" else 100
+    else:
+        args.limit = None if str(args.limit).lower() == "all" else int(args.limit)
+    if args.limit is not None and args.limit < 1:
+        parser.error("--limit must be positive")
     return args
 
 
 def load_questions(input_dir: Path, dataset: str, limit: int | None, seed: int) -> list[dict]:
     rng = random.Random(seed)
     if dataset == "mmlu":
-        source = input_dir / "combined_mmlu_correct.json"
-        if source.exists() and limit is not None:
-            rows = json.loads(source.read_text())
-        else:
-            from datasets import load_dataset
-
-            dataset_obj = load_dataset("cais/mmlu", "all", cache_dir=str(input_dir / "mmlu_cache"))
-            test_df = dataset_obj["test"].to_pandas()
-            rows = [
-                {
-                    "subject": row["subject"],
-                    "question": row["question"],
-                    "choices": list(row["choices"]),
-                    "answer": int(row["answer"]),
-                }
-                for _, row in test_df.iterrows()
-            ]
-        rows = list(rows)
-        rng.shuffle(rows)
+        source = input_dir / REDUX_DATA.name
+        rows = json.loads(source.read_text(encoding="utf-8"))
+        if limit is not None and len(rows) < limit:
+            raise ValueError(f"{source} contains {len(rows)} questions, fewer than requested {limit}")
+        # Preserve the fixed dataset order shared by behavioral and steering runs.
         return rows[:limit]
 
     from datasets import get_dataset_config_names, load_dataset
@@ -734,6 +728,8 @@ def process_model(model_key: str, args: argparse.Namespace) -> dict:
 
     print(f"Loading {args.limit} {args.dataset.upper()} questions")
     questions = load_questions(args.input_dir, args.dataset, args.limit, args.seed)
+    dataset_file = args.input_dir / REDUX_DATA.name if args.dataset == "mmlu" else None
+    dataset_sha256 = hashlib.sha256(dataset_file.read_bytes()).hexdigest() if dataset_file else None
     limit_slug = args.limit if args.limit is not None else "all"
     questions_file = model_dir / f"{args.dataset}_{limit_slug}_seed_{args.seed}.json"
     questions_file.write_text(json.dumps(questions, indent=2))
@@ -869,6 +865,8 @@ def process_model(model_key: str, args: argparse.Namespace) -> dict:
             "model": model_key,
             "model_name": model_name,
             "dataset": args.dataset,
+            "dataset_file": str(dataset_file) if dataset_file else None,
+            "dataset_sha256": dataset_sha256,
             "mode": mode,
             "explain": args.explain,
             "qd": use_qd,
@@ -914,6 +912,8 @@ def process_model(model_key: str, args: argparse.Namespace) -> dict:
         "model": model_key,
         "model_name": model_name,
         "dataset": args.dataset,
+        "dataset_file": str(dataset_file) if dataset_file else None,
+        "dataset_sha256": dataset_sha256,
         "mode": mode,
         "explain": args.explain,
         "qd": use_qd,

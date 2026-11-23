@@ -16,13 +16,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 REPORTS = [
     ROOT
-    / "results" / "projection"
-    / "qwen_experiment_mean_activation_projection_layer23_onto_layer_sweep_qwen_mmlu_mode_8_base_residual_assistant_start_all_wrong_minus_random_answers_n8_100_diffmeans.json",
+    / "results" / "mmlu_redux" / "projection"
+    / "qwen_experiment_mean_activation_projection_layer23_onto_layer_sweep_qwen_mmlu_mode_8_base_residual_assistant_start_all_wrong_minus_random_answers_n8_500_diffmeans.json",
     ROOT
-    / "results" / "projection"
-    / "qwen_experiment_mean_activation_projection_layer23_onto_layer_sweep_qwen_mmlu_mode_10_base_residual_assistant_start_all_wrong_minus_random_answers_n10_100_diffmeans.json",
+    / "results" / "mmlu_redux" / "projection"
+    / "qwen_experiment_mean_activation_projection_layer23_onto_layer_sweep_qwen_mmlu_mode_10_base_residual_assistant_start_all_wrong_minus_random_answers_n10_500_diffmeans.json",
 ]
-OUT_DIR = ROOT / "paper" / "generated"
+OUT_DIR = ROOT / "results" / "mmlu_redux" / "generated"
 
 
 def pearson(xs: list[float], ys: list[float]) -> float:

@@ -6,6 +6,9 @@ __pycache__/
 .DS_Store
 data/mmlu_cache/
 data/bbh_cache/
+# Optional, reproducibly imported question pools
+data/mmlu_test.json
+data/mmlu_redux_candidates.json
 activation_cache/
 
 # Large or intermediate generated outputs (regenerate with the README commands)
@@ -28,6 +31,23 @@ paper/main.pdf
 
 # Temporary social-control smoke outputs and Slurm logs
 results/social_controls/smoke/
+results/social_controls/choice_logprobs/
+results/social_controls/random_choice_logprobs/
+results/social_controls/participant_role_logprobs/
+results/social_controls/inspect_answer_tokens/
 /paper-baseline-*.log
 /participant-*.log
 /social-*.log
+/choice-logprobs-*.log
+/random-choice-logprobs-*.log
+/participant-role-logprobs-*.log
+/inspect-answer-tokens-*.log
+
+# MMLU-Redux experiment outputs and cluster logs
+results/mmlu_redux/
+/redux-screen-*.log
+/redux-select-*.log
+
+# Redux behavioral job logs
+/redux-behavior-*.log
+/redux-figures-*.log

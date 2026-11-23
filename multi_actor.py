@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import json
 import os
 import random
@@ -10,6 +11,7 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from steering import load_vector, steering_hook
+from pipeline_config import REDUX_DATA, BEHAVIORAL_DIR as REDUX_BEHAVIORAL_DIR
 
 MODEL_IDS = {
     "llama": "meta-llama/Llama-3.1-8B-Instruct",
@@ -158,8 +160,20 @@ def parse_answer(dataset, response):
 
 
 def run_experiment(model_name, dataset, mode, explain=False, model=None, device=None, output_file=None, batch_size=None,
-                   steering_vector=None, steering_layer=None, steering_alpha=None, seed=None):
+                   steering_vector=None, steering_layer=None, steering_alpha=None, seed=None,
+                   dataset_file=None, limit=None):
     n, use_qd, use_da = parse_mode(mode)
+    if limit is not None and limit < 1:
+        raise ValueError("limit must be positive")
+    if (dataset_file is not None or limit is not None) and output_file is None:
+        raise ValueError("An explicit output_file is required when selecting a dataset or limit")
+    dataset_file = Path(dataset_file) if dataset_file is not None else DATA_DIR / f"combined_{dataset}_correct.json"
+    data_bytes = dataset_file.read_bytes()
+    questions = json.loads(data_bytes)
+    if limit is not None:
+        questions = questions[:limit]
+    if not questions:
+        raise ValueError("No questions selected")
     if model is None:
         model, device = load_model(model_name, device=device)
     elif device is None:
@@ -178,10 +192,6 @@ def run_experiment(model_name, dataset, mode, explain=False, model=None, device=
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
-
-    dataset_file = DATA_DIR / f"combined_{dataset}_correct.json"
-    with open(dataset_file, "r") as f:
-        questions = json.load(f)
 
     rng = random.Random(42)
     tokenizer = model.tokenizer
@@ -456,6 +466,10 @@ def run_experiment(model_name, dataset, mode, explain=False, model=None, device=
         "parseable": parseable,
         "correct": correct,
     }
+    summary["dataset_file"] = str(dataset_file)
+    summary["dataset_sha256"] = hashlib.sha256(data_bytes).hexdigest()
+    if limit is not None:
+        summary["limit"] = limit
     if n >= 2:
         conformed = [r for r in records if r.get("conforms") is True]
         summary["conformity_rate"] = len(conformed) / parseable if parseable else 0.0
@@ -490,6 +504,10 @@ def main():
     )
     parser.add_argument("--model", choices=["llama", "qwen"], default="llama")
     parser.add_argument("--dataset", choices=["mmlu", "bbh"], default="mmlu")
+    parser.add_argument("--data-file", type=Path, default=None,
+                        help="Use questions from this JSON file instead of the original fixed set.")
+    parser.add_argument("--limit", type=int, default=None,
+                        help="Run only the first N questions from the selected dataset.")
     parser.add_argument("--explain", action="store_true", help="Chain-of-thought: model reasons step-by-step before answering")
     parser.add_argument("--batch-size", type=int, default=None, help="Number of prompts to generate at once")
     parser.add_argument("--output-file", type=Path, default=None,
@@ -506,6 +524,11 @@ def main():
     parser.add_argument("--normalize", action="store_true",
                         help="Divide the steering vector by its L2 norm before scaling.")
     args = parser.parse_args()
+
+    if args.limit is not None and args.limit < 1:
+        parser.error("--limit must be positive")
+    if (args.data_file is not None or args.limit is not None) and args.output_file is None:
+        parser.error("--data-file and --limit require --output-file to avoid overwriting existing results")
 
     try:
         parse_mode(args.mode)
@@ -525,6 +548,14 @@ def main():
     elif args.layer is not None or args.alpha is not None or args.normalize:
         parser.error("--layer/--alpha/--normalize are only meaningful with --vector-path")
 
+    # The command-line original pipeline defaults to Redux; library callers can
+    # still explicitly select historical datasets.
+    if args.dataset == "mmlu" and args.data_file is None:
+        args.data_file = REDUX_DATA
+    if args.output_file is None:
+        prompt_style = "explain" if args.explain else "base"
+        args.output_file = REDUX_BEHAVIORAL_DIR / args.dataset / f"{args.model}_{args.dataset}_{args.mode}_{prompt_style}.json"
+
     run_experiment(
         args.model, args.dataset, args.mode, args.explain,
         batch_size=args.batch_size,
@@ -533,6 +564,8 @@ def main():
         steering_layer=args.layer,
         steering_alpha=args.alpha,
         seed=args.seed,
+        dataset_file=args.data_file,
+        limit=args.limit,
     )
 
 

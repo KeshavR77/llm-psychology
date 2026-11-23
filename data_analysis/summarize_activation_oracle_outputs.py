@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT_FILE = ROOT / "paper" / "generated" / "qwen_activation_oracle_summary.json"
+OUT_FILE = ROOT / "results" / "mmlu_redux" / "generated" / "qwen_activation_oracle_summary.json"
 CONSENSUS_PROMPT = (
     "Does this activation represent pressure toward an incorrect consensus? "
     "Answer only True or False."
@@ -15,22 +15,9 @@ CONSENSUS_PROMPT = (
 BELIEF_PROMPT = "What belief or feature does this activation represent?"
 
 SOURCE_FILES = [
-    (
-        "results/layer_sweep/layer_sweep_residual_all_wrong_minus_random_answers_n8_100.json",
-        "results/layer_sweep/qwen/layer_sweep_qwen_mmlu_mode_8_base_residual_assistant_start_all_wrong_minus_random_answers_n8_100.json",
-    ),
-    (
-        "results/layer_sweep/layer_sweep_residual_all_wrong_minus_no_participants_n8_100.json",
-        "results/layer_sweep/qwen/layer_sweep_qwen_mmlu_mode_8_base_residual_assistant_start_all_wrong_minus_no_participants_n8_100.json",
-    ),
-    (
-        "results/layer_sweep/layer_sweep_delta_all_wrong_minus_random_answers_n8_100.json",
-        "results/layer_sweep/qwen/layer_sweep_qwen_mmlu_mode_8_base_delta_assistant_start_all_wrong_minus_random_answers_n8_100.json",
-    ),
-    (
-        "results/layer_sweep/layer_sweep_delta_all_wrong_minus_no_participants_n8_100.json",
-        "results/layer_sweep/qwen/layer_sweep_qwen_mmlu_mode_8_base_delta_assistant_start_all_wrong_minus_no_participants_n8_100.json",
-    ),
+    (f"results/mmlu_redux/layer_sweep/qwen/layer_sweep_qwen_mmlu_mode_8_base_{kind}_assistant_start_all_wrong_minus_{baseline}_n8_500.json",)
+    for kind in ("residual", "delta")
+    for baseline in ("random_answers", "no_participants")
 ]
 
 
@@ -100,7 +87,7 @@ def main() -> None:
     OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     _, first = load_local(SOURCE_FILES[0])
     summary = {
-        "source": "local results/layer_sweep activation-oracle outputs",
+        "source": "local MMLU-Redux activation-oracle outputs",
         "model_name": first["model_name"],
         "oracle_lora_path": "adamkarvonen/checkpoints_latentqa_cls_past_lens_addition_Qwen3-8B",
         "oracle_prompts": [

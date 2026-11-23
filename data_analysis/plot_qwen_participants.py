@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import csv
 from pathlib import Path
 
@@ -10,11 +11,11 @@ import matplotlib.pyplot as plt
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GENERATED = ROOT / "paper" / "generated"
-FIGURES = ROOT / "paper" / "figures"
+GENERATED = ROOT / "results" / "mmlu_redux" / "generated"
+FIGURES = ROOT / "results" / "mmlu_redux" / "figures"
 
 
-DATASET_LABELS = {"mmlu": "MMLU", "bbh": "BBH"}
+DATASET_LABELS = {"mmlu": "MMLU-Redux", "bbh": "BBH"}
 PROMPT_LABELS = {"base": "Base", "explain": "Explanation"}
 COLORS = {"base": "#1f77b4", "explain": "#d62728", "qd": "#2ca02c", "da": "#9467bd"}
 
@@ -66,9 +67,10 @@ def style_axis(ax, ylabel: str | None = None) -> None:
         ax.spines[spine].set_visible(False)
 
 
-def plot_metric_grid(rows: dict, metric: str, ylabel: str, filename: str) -> None:
-    fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.7), sharey=True)
-    for ax, dataset in zip(axes, ("mmlu", "bbh")):
+def plot_metric_grid(rows: dict, metric: str, ylabel: str, filename: str, datasets=("mmlu", "bbh")) -> None:
+    fig, axes = plt.subplots(1, len(datasets), figsize=(3.5 * len(datasets), 2.7), sharey=True, squeeze=False)
+    axes = axes[0]
+    for ax, dataset in zip(axes, datasets):
         for prompt in ("base", "explain"):
             modes = [str(i) for i in range(1, 11)] if metric != "conformity" else [str(i) for i in range(2, 11)]
             xs, ys, lows, highs = metric_series(rows, dataset, prompt, metric, modes)
@@ -88,12 +90,13 @@ def plot_metric_grid(rows: dict, metric: str, ylabel: str, filename: str) -> Non
     plt.close(fig)
 
 
-def plot_mitigation_markers(rows: dict) -> None:
-    fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.7), sharey=True)
+def plot_mitigation_markers(rows: dict, datasets=("mmlu", "bbh")) -> None:
+    fig, axes = plt.subplots(1, len(datasets), figsize=(3.5 * len(datasets), 2.7), sharey=True, squeeze=False)
+    axes = axes[0]
     x_positions = {"MA10": 0, "QD": 1, "DA": 2}
     offset = {"base": -0.08, "explain": 0.08}
 
-    for ax, dataset in zip(axes, ("mmlu", "bbh")):
+    for ax, dataset in zip(axes, datasets):
         for prompt in ("base", "explain"):
             for label, mode in (("MA10", "10"), ("QD", "qd"), ("DA", "da")):
                 row = rows[(dataset, mode, prompt)]
@@ -129,12 +132,16 @@ def plot_mitigation_markers(rows: dict) -> None:
     plt.close(fig)
 
 
-def main() -> None:
+def main(argv=None) -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--dataset", choices=("mmlu", "bbh"), help="Plot only one dataset.")
+    args = parser.parse_args(argv)
+    datasets = (args.dataset,) if args.dataset else ("mmlu", "bbh")
     FIGURES.mkdir(parents=True, exist_ok=True)
     rows = load_conditions()
-    plot_metric_grid(rows, "conformity", "Conformity rate", "qwen_conformity_by_participants")
-    plot_metric_grid(rows, "accuracy", "Accuracy", "qwen_accuracy_by_participants")
-    plot_mitigation_markers(rows)
+    plot_metric_grid(rows, "conformity", "Conformity rate", "qwen_conformity_by_participants", datasets)
+    plot_metric_grid(rows, "accuracy", "Accuracy", "qwen_accuracy_by_participants", datasets)
+    plot_mitigation_markers(rows, datasets)
     print(f"Wrote figures to {FIGURES}")
 
 

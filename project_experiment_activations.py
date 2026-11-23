@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -9,6 +10,7 @@ import torch
 from tqdm import tqdm
 
 from layer_sweep import collect_activations, load_model
+from pipeline_config import BEHAVIORAL_DIR, PROJECTION_DIR, REFERENCE_VECTOR
 
 
 EXPERIMENT_RE = re.compile(r"qwen_(mmlu|bbh)_(.+)_(base|explain)\.json$")
@@ -24,14 +26,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--reference",
         type=Path,
-        default=Path(
-            "results/layer_sweep/qwen/"
-            "layer_sweep_qwen_mmlu_mode_8_base_residual_assistant_start_"
-            "all_wrong_minus_random_answers_n8_100_diffmeans.pt"
-        ),
+        default=REFERENCE_VECTOR,
     )
-    parser.add_argument("--runs-dir", type=Path, default=Path("results/behavioral"))
-    parser.add_argument("--output-dir", type=Path, default=Path("results/projection"))
+    parser.add_argument("--runs-dir", type=Path, default=BEHAVIORAL_DIR)
+    parser.add_argument("--output-dir", type=Path, default=PROJECTION_DIR)
     parser.add_argument("--layer", type=int, default=23)
     parser.add_argument("--position", default="assistant_start")
     parser.add_argument("--activation-kind", default="residual")
@@ -86,6 +84,14 @@ def main() -> None:
     print(f"Reference norm: {reference.norm().item():.6f}")
     print(f"Experiments: {len(experiments)}")
 
+    # Refuse to combine a Redux direction with a different MMLU population.
+    reference_hash = reference_data.get("dataset_sha256")
+    for experiment_file in experiments:
+        if experiment_info(experiment_file)["dataset"] == "mmlu":
+            run = json.loads(experiment_file.read_text())
+            if not reference_hash or run.get("dataset_sha256") != reference_hash:
+                raise ValueError(f"MMLU dataset mismatch between {experiment_file} and {args.reference}")
+
     missing_caches = [
         experiment_file
         for experiment_file in experiments
@@ -104,8 +110,11 @@ def main() -> None:
     for experiment_file in tqdm(experiments, desc="Experiments"):
         info = experiment_info(experiment_file)
         cache_file = cache_dir / f"{experiment_file.stem}_layer{args.layer}_{args.activation_kind}_{args.position}.pt"
+        input_hash = hashlib.sha256(experiment_file.read_bytes()).hexdigest()
         if cache_file.exists() and not args.overwrite:
             cache = torch.load(cache_file, map_location="cpu", weights_only=False)
+            if cache.get("experiment_sha256") != input_hash:
+                raise ValueError(f"Stale cache {cache_file}; rerun with --overwrite")
             mean_activation = cache["mean_activation"].float()
             position_counts = cache.get("position_counts", {})
             sample_count = int(cache["sample_count"])
@@ -133,6 +142,7 @@ def main() -> None:
             torch.save(
                 {
                     "experiment_file": str(experiment_file),
+                    "experiment_sha256": input_hash,
                     "layer": args.layer,
                     "position": args.position,
                     "activation_kind": args.activation_kind,

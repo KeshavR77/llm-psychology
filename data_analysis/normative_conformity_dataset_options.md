@@ -1,0 +1,62 @@
+# Dataset and task options for separating conformity effects
+
+Checked 2026-11-16 against primary sources and authors' public repositories. No models were run. This note supplements the existing literature notes.
+
+## Availability and suitability
+
+| Candidate | Verified artifacts | Fit for text-only Qwen3-8B and the stated constraints |
+|---|---|---|
+| Bellina et al., arXiv:2601.05384 | Public code, visibility paraphrases, reduced measurements, manifests; Zenodo contains actual image and trial-result archives | Best verified reusable infrastructure; original tasks require vision, and public/private wording is not length matched |
+| Bito et al., arXiv:2604.19301 | Article and appendix manipulation sentences; no study code/data link located in the inspected paper or targeted title search | Text-only preference task is easy to reconstruct, but this is a new implementation, and original informational framing violates the requested constraint |
+| Mahmoodi et al., PLOS Biology 2022 | Public MATLAB figure scripts and `.mat` data | Useful subtle reciprocity manipulation; perceptual, continuous-response, repeated-interaction task needs adaptation |
+| Independent private-target task | Proposed synthetic task, no existing artifact claimed | Strongest control of the objective evidential relevance of peer answers; does not by itself identify normative motivation |
+
+## Bellina: real artifacts, with a modality limitation
+
+The [paper](https://arxiv.org/abs/2601.05384) is titled *Conformity and Social Impact on AI Agents*. Its [authors' repository](https://github.com/alebellina412/conformity_LLMs) now uses the title *Perceptual conformity in multimodal language models follows Social Impact Theory*. Keep this title difference visible when citing versions.
+
+Verified directly in the repository and archive API:
+
+- [Prompt constructor](https://github.com/alebellina412/conformity_LLMs/blob/main/src/prompts.py) and [condition definitions](https://github.com/alebellina412/conformity_LLMs/blob/main/src/conditions.py). The latter defines 100 `PUBLIC` and 100 `PRIVATE` statements, plus two enriched statements per condition. The first ordinary pair differs by inserting “not”; these are paired paraphrases, not proof of equal token lengths.
+- [Data documentation](https://github.com/alebellina412/conformity_LLMs/blob/main/docs/DATA.md), [reduced measurements](https://github.com/alebellina412/conformity_LLMs/tree/main/data), and [manifests](https://github.com/alebellina412/conformity_LLMs/tree/main/manifests). Data include `main` and `visibility_enriched` parquet files, with condition, group size, wording index, item ID, correct letter and answer-logit gap.
+- [Zenodo deposit](https://doi.org/10.5281/zenodo.18022031): its API returned `images.zip` (209,111,119 bytes), `images_mnist.zip` (19,870,879 bytes), and `results.zip` (159,229,665 bytes). Documentation describes per-trial logits and a hashed prompt store. File listings were verified; archives were not downloaded or checked internally.
+
+The original image tasks are line judgments, color recognition, dot estimation and handwritten digits. Replacing images with explicit numeric line lengths or dot counts creates a new symbolic task with different uncertainty. It does not reproduce perceptual difficulty. The reusable contribution here is the stimulus/condition organization, response-probability scoring and paraphrase bank. Public/private comparisons still allow evaluation, audience and generic context explanations. In the constructor, zero-confederate trials omit condition notices, so that baseline does not estimate a visibility effect by itself.
+
+## Bito: published task recipe, no verified released dataset
+
+The [primary paper, §§3.1–3.2 and appendices B–G](https://arxiv.org/html/2604.19301v1), supplies a binary fruit-display vote, an initial preference supplied to the model, peer opinions and contextual manipulations. It describes named versus secret ballots, evaluation, future relationships, and peers having previously seen room features. The appendix supplies the manipulation sentences, rather than an independently verified downloadable corpus of complete prompts and responses.
+
+No study repository, dataset DOI or code/data availability link was located in this paper. The GitHub links in the HTML concern arXiv rendering. A targeted title/code search did not identify an authors' release. This is a bounded negative finding, not proof that no release exists anywhere.
+
+The ballot task works with text-only models, but the named/secret sentences differ in length. The original informational manipulation explicitly gives peers extra room information. Preference alignment also admits coordination over a shared decision, contextual preference revision and role following. Therefore treat it as a useful task family and prior mechanistic comparison, not an off-the-shelf pure normative dataset.
+
+## Human reciprocity: a subtler social manipulation
+
+[Mahmoodi et al.](https://pmc.ncbi.nlm.nih.gov/articles/PMC8893340/), Results: Experimental task, alternate trials where a participant revises an estimate with trials where the partner revises. Partners' initial estimates follow the same generation rule, while their willingness to move toward the participant varies. This creates a reciprocity manipulation through observed behavior rather than an instruction to agree. Human/computer partner framing provides an additional comparison. The original revision was constrained to lie between the two initial estimates, and the task remained informationally useful; these features must be accounted for in adaptation.
+
+The paper's data statement links [Reciprocity_Data](https://github.com/alimahmoodia/Reciprocity_Data). The actual tree contains `Figure2A.m`–`Figure2E.m`, other figure scripts, corresponding `.mat` files and brain-analysis files; its [README](https://github.com/alimahmoodia/Reciprocity_Data/blob/main/README.md) says these recreate manuscript figures. These are verified analysis artifacts, not a ready-made LLM prompt dataset. A text adaptation could hold current advice fixed and vary an earlier partner's numeric revisions; copying, inferred competence and learned conversational reciprocity remain alternatives to approval seeking.
+
+## Proposed private-target task: remove the evidential link structurally
+
+This is a proposed design, not a result or existing dataset. Generate independent personal targets and observations from a fully specified task. Each participant reports their own target. Give the focal model an unambiguous private stimulus and show peer answers generated from separate personal stimuli. For example, fixed-format records can list participant, target ID, stimulus ID and response. Ask for the focal participant's own response using one shared final answer cue. Do not ask for a collective choice, which would make peer preferences relevant to the objective.
+
+Construct two relevance conditions with the same schema: peers' target IDs either match the focal target ID or refer to independently sampled targets. Keep peer names, answer labels, row count, answer sequence, wrappers and final cue fixed within each pair; change only the target-assignment fields needed to establish relevance. Counterbalance arbitrary IDs and verify their actual Qwen tokenizer lengths. Token equality controls a positional nuisance, not the semantic meaning of an ID. Clearly establish the mapping and test comprehension so the model does not assume everyone answered the same question.
+
+For independent targets, generate the focal target independently of the peer majority, including when conditioning on unanimous peer records. Under that generator, peer answers carry zero information about the focal target. Maintain answer-key and majority-label balance. An optional simple symbolic stimulus, such as a short count or exact string comparison, avoids vision and factual-recall uncertainty; choose task difficulty from independent pilot items, not conformity outcomes.
+
+What this supports: peer-answer attraction despite zero objective evidential relevance. It does **not** establish normative conformity. Repeated-label completion, attention failure, confusion about whose target is requested, implicit task inference and role compliance can still produce attraction. Moreover, different personal targets may remove any social reason to agree, producing no normative pressure at all. Add independently varied visibility or observed reciprocity only if testing a social mechanism is essential; each introduces its own assumptions. Under the user's constraint against overt pressure, a clean label for the initial experiment is **conformity with irrelevant peer answers**.
+
+Keep a second matched family where peer observations concern the same hidden target and provide genuinely useful evidence. This supplies a positive control for preserved evidence use without saying peers are more informed. Estimate a relation-specific behavioral difference before assigning psychological labels to DiffMean directions. Any residual activation difference can still encode target assignment, attention or task structure; selective held-out interventions are necessary for a stronger mechanistic claim.
+
+## Proposed MMLU variant: independent option permutations
+
+A closer fit to the existing MCQ setup preserves the MMLU question and focal answer options. Every participant receives the same semantic question with an independently shuffled option order. Show only the peers' answer letters; keep their option mappings hidden and omit rationales or semantic option names, which could disclose useful evidence. A constant exam-format explanation establishes independent option orders in every condition, without claims about superior knowledge or an instruction to agree. Use exactly the same seven peer rows and final answer cue across contrasts.
+
+For K options, let G be the semantic correct answer and let each peer have an independent uniform permutation pi_i. Even if every peer knows G, their reported letter L_i = pi_i(G) is uniform over K labels conditional on G and the focal permutation. Thus peer letters are independent of the focal correct letter, and even unanimous letters provide no task evidence under this generator. This argument assumes independently randomized permutations and hidden peer mappings; shared option orders or recoverable mappings invalidate it. It is a property of the constructed task, not a guarantee that the model understands it.
+
+Build a consensus transcript and a comparison transcript with the same row structure and token counts, changing only answer letters. A repeated-letter transcript also changes repetition statistics, so this comparison cannot isolate a social cause. To construct unanimous correct peers, sample a majority letter independently of the focal permutation and choose each hidden peer permutation uniformly among permutations placing G at that letter. Equivalently, condition originally independent permutations on the unanimous transcript. Avoid choosing the majority based on focal correctness during generation; analyze disagreeing cases as a prespecified subset and retain agreeing cases for calibration. With seven peers and four options, naturally unanimous transcripts are rare; deliberate conditional sampling must be documented rather than described as an unselected sample.
+
+Before a conformity interpretation, verify mapping comprehension on held-out tasks: ask whether one peer's letter identifies the same semantic option for the focal participant; reveal a peer mapping on some positive-control trials and confirm the model can translate it; compare shared-order versus independent-order instructions with matched templates. Assess task correctness and target-label probability using the same encoding and scoring as MMLU. Hold out question identities and instruction families when testing activation interventions.
+
+This construction retains coherent peer answers to the same question while removing the evidential value of their displayed labels. It may therefore be preferable to separate private-target cards under the user's constraints. Call the behavioral result **adoption of a non-informative peer label** until further controls distinguish copying, anchoring, instruction-comprehension failures and social approval sensitivity. The design deliberately avoids explicit pressure, so a null remains compatible with insufficient normative incentive.

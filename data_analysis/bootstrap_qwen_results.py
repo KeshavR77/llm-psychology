@@ -8,6 +8,7 @@ and selected paired contrasts. Accuracy is correct / parseable.
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import math
@@ -17,7 +18,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT_DIR = ROOT / "paper" / "generated"
+OUT_DIR = ROOT / "results" / "mmlu_redux" / "generated"
 BOOTSTRAP_SAMPLES = 10_000
 PERMUTATION_SAMPLES = 10_000
 SEED = 20260507
@@ -203,17 +204,23 @@ def write_csv(path: Path, rows: list[dict], fieldnames: list[str]) -> None:
         writer.writerows(rows)
 
 
-def main() -> None:
+def main(argv=None) -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--dataset", choices=("mmlu", "bbh"), help="Analyze only one dataset.")
+    args = parser.parse_args(argv)
+    datasets = (args.dataset,) if args.dataset else ("mmlu", "bbh")
     rng = random.Random(SEED)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     results: dict[tuple[str, str, str], list[dict]] = {}
     keys_by_dataset: dict[str, list[tuple]] = {}
 
-    for path in sorted((ROOT / "results" / "behavioral").glob("*/qwen_*.json")):
+    for path in sorted((ROOT / "results" / "mmlu_redux" / "behavioral").glob("*/qwen_*.json")):
         match = RESULT_RE.match(path.name)
         if not match:
             continue
         dataset, mode, prompt = match.groups()
+        if dataset not in datasets:
+            continue
         with path.open() as f:
             data = json.load(f)
         records = data["results"]
@@ -224,7 +231,7 @@ def main() -> None:
         elif keys != keys_by_dataset[dataset]:
             raise ValueError(f"Item order mismatch in {path.name}")
 
-    expected = 2 * 12 * 2
+    expected = len(datasets) * 12 * 2
     if len(results) != expected:
         raise ValueError(f"Expected {expected} Qwen files, found {len(results)}")
 
@@ -254,7 +261,7 @@ def main() -> None:
         )
 
     contrast_specs = []
-    for dataset in ("mmlu", "bbh"):
+    for dataset in datasets:
         for prompt in ("base", "explain"):
             contrast_specs.extend(
                 [
@@ -314,7 +321,7 @@ def main() -> None:
         contrast_rows.append(row)
 
     trend_rows = []
-    for dataset in ("mmlu", "bbh"):
+    for dataset in datasets:
         for prompt in ("base", "explain"):
             records_by_n = {n: results[(dataset, str(n), prompt)] for n in range(2, 11)}
             for metric_name in ("accuracy", "conformity"):
